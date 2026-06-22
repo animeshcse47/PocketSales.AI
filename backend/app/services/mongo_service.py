@@ -46,6 +46,11 @@ async def update_session(session_id: str, **kwargs):
     )
 
 
+async def delete_session(session_id: str):
+    await sessions_col.delete_one({"session_id": session_id})
+    await messages_col.delete_many({"session_id": session_id})
+
+
 async def add_message(session_id: str, message: ChatMessage):
     doc = message.model_dump()
     doc["session_id"] = session_id

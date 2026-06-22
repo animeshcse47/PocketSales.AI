@@ -1,11 +1,35 @@
+import { useState } from "react"
 import { format, isValid } from "date-fns"
+import { deleteSession } from "../services/api"
 
-export default function SessionSidebar({ sessions, currentSessionId, onSelectSession, onNewSession }) {
+export default function SessionSidebar({ sessions, setSessions, currentSessionId, onSelectSession, onNewSession }) {
+  const [hoveredId, setHoveredId] = useState(null)
+
   function formatDate(val) {
     if (!val) return "Just now"
     const d = new Date(val)
     return isValid(d) ? format(d, "MMM d, h:mm a") : "Just now"
   }
+
+  async function handleDelete(e, sessionId) {
+    e.stopPropagation()
+    try {
+      await deleteSession(sessionId)
+      setSessions(prev => prev.filter(s => s.session_id !== sessionId))
+      if (currentSessionId === sessionId) {
+        const remaining = sessions.filter(s => s.session_id !== sessionId)
+        if (remaining.length > 0) {
+          onSelectSession(remaining[0].session_id)
+        } else {
+          onNewSession()
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete session", err)
+    }
+  }
+
+  const icons = ["person", "chat", "history", "work", "contacts"]
 
   return (
     <aside className="w-[280px] h-full fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col p-4 z-50">
@@ -33,24 +57,47 @@ export default function SessionSidebar({ sessions, currentSessionId, onSelectSes
         )}
         {sessions.map((session, i) => {
           const isActive = session.session_id === currentSessionId
-          const icons = ["person", "chat", "history", "work", "contacts"]
           const icon = icons[i % icons.length]
+          const isHovered = hoveredId === session.session_id
+
           return (
-            <button
+            <div
               key={session.session_id}
+              onMouseEnter={() => setHoveredId(session.session_id)}
+              onMouseLeave={() => setHoveredId(null)}
               onClick={() => onSelectSession(session.session_id)}
-              className={`w-full text-left px-3 py-3 rounded-r-lg flex items-center gap-3 transition-colors cursor-pointer group ${
+              className={`w-full text-left px-3 py-2.5 rounded-r-lg flex items-center gap-3 transition-colors cursor-pointer group ${
                 isActive
                   ? "bg-surface-variant text-on-surface border-l-4 border-primary"
                   : "text-on-surface-variant hover:bg-surface-container-highest border-l-4 border-transparent"
               }`}
             >
-              <span className="material-symbols-outlined text-[18px] shrink-0" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{icon}</span>
+              <span
+                className="material-symbols-outlined text-[18px] shrink-0"
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+              >
+                {icon}
+              </span>
+
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{session.title || "New Session"}</p>
+                <p className="text-sm font-medium truncate">
+                  {session.title && session.title !== "New Session"
+                    ? session.title
+                    : "New Session"}
+                </p>
                 <p className="text-[10px] opacity-60 mt-0.5">{formatDate(session.last_active)}</p>
               </div>
-            </button>
+
+              {isHovered && (
+                <button
+                  onClick={(e) => handleDelete(e, session.session_id)}
+                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md hover:bg-error/20 transition-colors"
+                  title="Delete session"
+                >
+                  <span className="material-symbols-outlined text-[14px] text-error opacity-70 hover:opacity-100">delete</span>
+                </button>
+              )}
+            </div>
           )
         })}
       </nav>

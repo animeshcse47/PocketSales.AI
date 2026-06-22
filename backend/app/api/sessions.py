@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.mongo_service import create_session, get_all_sessions, get_session
+from app.services.mongo_service import create_session, get_all_sessions, get_session, delete_session
 
 router = APIRouter()
 
@@ -22,3 +22,9 @@ async def get_session_detail(session_id: str):
     if not session:
         raise HTTPException(404, "Session not found")
     return session.model_dump()
+
+
+@router.delete("/{session_id}")
+async def remove_session(session_id: str):
+    await delete_session(session_id)
+    return {"ok": True}

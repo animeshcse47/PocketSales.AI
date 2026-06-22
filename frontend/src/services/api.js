@@ -46,3 +46,7 @@ export async function getChatHistory(sessionId) {
   const { data } = await api.get(`/api/chat/${sessionId}/history`)
   return data.messages
 }
+
+export async function deleteSession(sessionId) {
+  await api.delete(`/api/sessions/${sessionId}`)
+}

@@ -38,6 +38,7 @@ export default function App() {
     <div className="flex h-screen overflow-hidden bg-background text-on-surface dark">
       <SessionSidebar
         sessions={sessions}
+        setSessions={setSessions}
         currentSessionId={currentSessionId}
         onSelectSession={setCurrentSessionId}
         onNewSession={handleNewSession}

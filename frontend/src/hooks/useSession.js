@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createSession, listSessions } from "../services/api"
 
 export function useSession() {
   const [sessions, setSessions] = useState([])
   const [currentSessionId, setCurrentSessionId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const initialized = useRef(false)
 
   useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
     loadSessions()
   }, [])
 
@@ -17,10 +20,16 @@ export function useSession() {
       if (all.length > 0) {
         setCurrentSessionId(all[0].session_id)
       } else {
-        await startNewSession()
+        const session = await createSession()
+        setSessions([session])
+        setCurrentSessionId(session.session_id)
       }
     } catch {
-      await startNewSession()
+      try {
+        const session = await createSession()
+        setSessions([session])
+        setCurrentSessionId(session.session_id)
+      } catch {}
     } finally {
       setLoading(false)
     }
@@ -28,10 +37,20 @@ export function useSession() {
 
   async function startNewSession() {
     const session = await createSession()
-    setSessions(prev => [session, ...prev])
+    setSessions(prev => {
+      const exists = prev.find(s => s.session_id === session.session_id)
+      return exists ? prev : [session, ...prev]
+    })
     setCurrentSessionId(session.session_id)
     return session
   }
 
-  return { sessions, setSessions, currentSessionId, setCurrentSessionId, startNewSession, loading }
+  return {
+    sessions,
+    setSessions,
+    currentSessionId,
+    setCurrentSessionId,
+    startNewSession,
+    loading,
+  }
 }
